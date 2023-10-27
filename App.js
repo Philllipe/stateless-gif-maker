@@ -16,50 +16,89 @@ require('dotenv').config();
 const AWS = require('aws-sdk');
 
 //files
-const inputFilePath = 'TestFile.mp4';
-const outputFilePath = 'Outputvideos';
+const inputFilePath = './TestFile.mp4';
+const outputFilePath = './Outputvideos/New_File.mp4';
 
 
 //helpfull Links
 //https://www.npmjs.com/package/ffmpeg
 
+// Cloud Services Set-up 
+// Create unique bucket name
+const bucketName = "CAB-432-Video-Program";
+const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
 
+(async () => {
+    try {
+        await s3.createBucket({ Bucket: bucketName }).promise();
+        console.log(`Created bucket: ${bucketName}`);
+    } catch (err) {
+        // We will ignore 409 errors which indicate that the bucket already exists
+        if (err.statusCode !== 409) {
+            console.log(`Error creating bucket: ${err}`);
+        }
+    }
+})();
 
 
 //test if everything set up
 app.get("/test", async (req, res) => {
+
+
+
+
+    
     try {
-        //process video - not done (doesn't seem to have any data on the video or be able to save it)
+        //process video
         var process = new ffmpeg(inputFilePath);
         process.then(function (video) {
             // Video metadata
-            console.log(video.metadata);
+            console.log('data: ');
+            console.log(video.metadata)
+
             // FFmpeg configuration
+            console.log('config:');
             console.log(video.info_configuration);
 
-            //Testing
-            video.setVideoFormat('avi');
+            //edit video - not done
+            //video.setVideoFormat('avi');
+            video.setDisableAudio();
+            video.setVideoDuration(20)
+
+            //save video to redis
             video.save(outputFilePath, function (error, file) {
                 if (!error)
                     console.log('Video file: ' + file);
             });
+
+            //save video to S3 - not done
+            const body = JSON.stringify({
+                source: "S3 Bucket",
+                ...video.metadata,
+            });
+
+            const objectParams = { Bucket: bucketName, Key: s3Key, Body: body };
+
+            s3.putObject(objectParams).promise();
+
+            console.log(`Successfully uploaded data to ${bucketName}${s3Key}`);
+
+            //return video - not done
+
+
         }, function (err) {
             console.log('Error: ' + err);
         });
     } catch (e) {
-        console.log(e.code);
-        console.log(e.msg);
+        console.log('hit: ' + e.code);
+        console.log('hited: ' + e.msg);
     }
 
-    //edit video - not done
 
-    //save video to redis - not done
 
-    //save video to S3 - not done
+    
 
-    //return video - not done
-
-    res.json();  
+    res.json();
 });
 
 app.listen(3000, () => {
