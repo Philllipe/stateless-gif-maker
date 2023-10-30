@@ -7,31 +7,43 @@ require('dotenv').config();
 const AWS = require('aws-sdk');
 
 //files
-const inputFilePath = './TestFile.mp4';
-const outputFilePath = './Outputvideos/New_File.mp4';
+const inputFilePath = 'TestFile.mp4';
+const outputFilePath = 'Outputvideos/New_File.gif';
 
 //helpfull Links
 //https://www.npmjs.com/package/ffmpeg
 
+
+
+
+
 /* GET home page. */
 router.get('/', function(req, res, next) 
 {
+
+
   try {
     //process video
     var process = new ffmpeg(inputFilePath);
     process.then(function (video) {
         // Video metadata
-        console.log('data: ');
-        console.log(video.metadata)
+        //console.log('data: ');
+        //console.log(video.metadata)
 
         // FFmpeg configuration
-        console.log('config:');
-        console.log(video.info_configuration);
+        //console.log('config:');
+        //console.log(video.info_configuration);
 
         //edit video - not done
-        //video.setVideoFormat('avi');
-        video.setDisableAudio();
-        video.setVideoDuration(20);
+        video.setVideoFormat('gif');
+        
+        if(size){
+            video.setVideoSize('640x480', true, false);
+        }
+
+        if(duration){
+            video.setVideoDuration(5);
+        }
 
         //save video
         video.save(outputFilePath, function (error, file) {
@@ -39,11 +51,9 @@ router.get('/', function(req, res, next)
                 console.log('Video file: ' + file);
         });
 
+
         //save video to S3 - not done
-        const body = JSON.stringify({
-            source: "S3 Bucket",
-            ...video,
-        });
+        const body = video
 
         const objectParams = { Bucket: bucketName, Key: s3Key, Body: body };
 
