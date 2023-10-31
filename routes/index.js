@@ -21,58 +21,58 @@ const outputFilePath = 'Outputvideos/New_File.gif';
 router.get('/', function(req, res, next) 
 {
 
+    try {
+        //process video
+        var process = new ffmpeg(inputFilePath);
+        process.then(function (video) {
+            // Video metadata
+            //console.log('data: ');
+            //console.log(video.metadata)
 
-  try {
-    //process video
-    var process = new ffmpeg(inputFilePath);
-    process.then(function (video) {
-        // Video metadata
-        //console.log('data: ');
-        //console.log(video.metadata)
+            // FFmpeg configuration
+            //console.log('config:');
+            //console.log(video.info_configuration);
 
-        // FFmpeg configuration
-        //console.log('config:');
-        //console.log(video.info_configuration);
+            //edit video - not done
+            video.setVideoFormat('gif');
+            
+            // if(size){
+            //     video.setVideoSize('640x480', true, false);
+            // }
 
-        //edit video - not done
-        video.setVideoFormat('gif');
-        
-        if(size){
-            video.setVideoSize('640x480', true, false);
-        }
+            // if(duration){
+            //     video.setVideoDuration(5);
+            // }
+            
 
-        if(duration){
-            video.setVideoDuration(5);
-        }
+            //save video
+            video.save(outputFilePath, function (error, file) {
+                if (!error)
+                    console.log('Video file: ' + file);
+            });
 
-        //save video
-        video.save(outputFilePath, function (error, file) {
-            if (!error)
-                console.log('Video file: ' + file);
+
+            //save video to S3 - not done
+            const body = video
+
+            const objectParams = { Bucket: bucketName, Key: s3Key, Body: body };
+
+            s3.putObject(objectParams).promise();
+
+            console.log(`Successfully uploaded data to ${bucketName}${s3Key}`);
+
+            //return video - not done
+
+
+        }, function (err) {
+            console.log('Error: ' + err);
         });
+    } catch (e) {
+        console.log('hit: ' + e.code);
+        console.log('hited: ' + e.msg);
+    }
 
-
-        //save video to S3 - not done
-        const body = video
-
-        const objectParams = { Bucket: bucketName, Key: s3Key, Body: body };
-
-        s3.putObject(objectParams).promise();
-
-        console.log(`Successfully uploaded data to ${bucketName}${s3Key}`);
-
-        //return video - not done
-
-
-      }, function (err) {
-          console.log('Error: ' + err);
-      });
-  } catch (e) {
-      console.log('hit: ' + e.code);
-      console.log('hited: ' + e.msg);
-  }
-
-  res.render("index", {});
+    res.render("index", {});
 });
 
 
