@@ -1,3 +1,7 @@
+# For The Application
+/uploads
+/downloads
+
 # Logs
 logs
 *.log
