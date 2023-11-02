@@ -8,18 +8,50 @@ const cors = require("cors");
 router.use(cors());
 
 const s3 = new AWS.S3();
-const sqs = new AWS.SQS();
 
 const s3Bucket = "n11029935-assignment-2";
-const s3Key = "output.gif";
 
 const upload = multer({ dest: "uploads/" });
+
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  sessionToken: process.env.AWS_SESSION_TOKEN,
+  region: "ap-southeast-2",
+});
+
+function uploadToS3(filePath, callback) {
+  const uploadParams = {
+    Bucket: s3Bucket,
+    Key: "output.gif", // Object key in S3.
+    Body: fs.createReadStream(filePath),
+  };
+
+  s3.upload(uploadParams, (err, data) => {
+    if (err) {
+      callback(err, null);
+    } else {
+      callback(null, data);
+    }
+  });
+}
+
+function cleanupFiles(files) {
+  for (const file of files) {
+    fs.unlink(file, (err) => {
+      if (err) {
+        console.error("Error deleting file:", err);
+      }
+    });
+  }
+}
 
 // Home Page
 router.get("/", function (req, res, next) {
   res.render("index", { title: "Home Page" });
 });
 
+// Upload Page
 router.post("/upload", upload.single("video"), (req, res) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded.");
@@ -37,17 +69,18 @@ router.post("/upload", upload.single("video"), (req, res) => {
     .toFormat("gif")
     .on("end", () => {
       // Conversion finished; send the GIF to the client or do further processing.
-      res.download(outputFilePath, "output.gif", (err) => {
+      // Upload the converted GIF to Amazon S3.
+      uploadToS3(outputFilePath, (err, s3Data) => {
         if (err) {
-          console.error("Download error:", err);
-          res.status(500).send("Error during download");
+          console.error("S3 upload error:", err);
+          res.status(500).send("Error during S3 upload");
         } else {
-          // Delete the temporary files after download
-          fs.unlink(inputVideoFilePath, (err) => {
-            if (err) {
-              console.error("Error deleting input file:", err);
-            }
-          });
+          console.log("File uploaded to S3:", s3Data.Location);
+
+          // Delete the temporary files after upload.
+          cleanupFiles([inputVideoFilePath, outputFilePath]);
+
+          res.status(200).send("File uploaded to S3.");
         }
       });
     })
