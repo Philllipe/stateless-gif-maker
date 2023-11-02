@@ -77,8 +77,7 @@ router.post("/upload", upload.single("video"), (req, res) => {
   const inputVideoFilePath = req.file.path; // Use the uploaded video file.
   const outputFilePath = "downloads/output.gif"; // Specify the path where you want to save the output GIF.
 
-  ffmpeg()
-    .input(inputVideoFilePath)
+  ffmpeg(inputVideoFilePath)
     .setStartTime("00:00:01")
     .setDuration("5")
     .size("1440x1080")
@@ -101,7 +100,7 @@ router.post("/upload", upload.single("video"), (req, res) => {
               res.status(500).send("Error sending message to SQS");
             } else {
               // Delete the temporary files after upload.
-              cleanupFiles([inputVideoFilePath, outputFilePath]);
+              cleanupFiles([inputVideoFilePath]);
 
               res
                 .status(200)
