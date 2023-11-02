@@ -1,15 +1,17 @@
 const express = require("express");
 const router = express.Router();
+
 const multer = require("multer");
 const AWS = require("aws-sdk");
 const ffmpeg = require("fluent-ffmpeg");
 const fs = require("fs");
-const cors = require("cors");
-router.use(cors());
 
 const s3 = new AWS.S3();
+const sqs = new AWS.SQS({ region: "ap-southeast-2" });
 
 const s3Bucket = "n11029935-assignment-2";
+const sqsQueueUrl =
+  "https://sqs.ap-southeast-2.amazonaws.com/901444280953/n11029935-sqs-queue";
 
 const upload = multer({ dest: "uploads/" });
 
@@ -32,6 +34,21 @@ function uploadToS3(filePath, callback) {
       callback(err, null);
     } else {
       callback(null, data);
+    }
+  });
+}
+
+function sendSQSMessage(s3ObjectUrl, callback) {
+  const params = {
+    MessageBody: s3ObjectUrl, // Include the S3 object URL in the message.
+    QueueUrl: sqsQueueUrl,
+  };
+
+  sqs.sendMessage(params, (err, data) => {
+    if (err) {
+      callback(err);
+    } else {
+      callback(null);
     }
   });
 }
@@ -77,10 +94,20 @@ router.post("/upload", upload.single("video"), (req, res) => {
         } else {
           console.log("File uploaded to S3:", s3Data.Location);
 
-          // Delete the temporary files after upload.
-          cleanupFiles([inputVideoFilePath, outputFilePath]);
+          // Send a message to Amazon SQS.
+          sendSQSMessage(s3Data.Location, (sqsErr) => {
+            if (sqsErr) {
+              console.error("SQS message sending error:", sqsErr);
+              res.status(500).send("Error sending message to SQS");
+            } else {
+              // Delete the temporary files after upload.
+              cleanupFiles([inputVideoFilePath, outputFilePath]);
 
-          res.status(200).send("File uploaded to S3.");
+              res
+                .status(200)
+                .send("File uploaded to S3 and message sent to SQS.");
+            }
+          });
         }
       });
     })

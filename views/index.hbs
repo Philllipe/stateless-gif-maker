@@ -1,0 +1,20 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Video to GIF Converter</title>
+    <link rel="stylesheet" href="styles/styles.css" />
+  </head>
+  <body>
+    <h1 class="text-4xl">Video to GIF Converter</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+      <input type="file" name="video" accept=".mp4" />
+      <button
+        type="submit"
+        class="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+      >
+        Convert to GIF
+      </button>
+    </form>
+  </body>
+</html>
