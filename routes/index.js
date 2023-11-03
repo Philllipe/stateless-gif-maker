@@ -1,10 +1,14 @@
 const express = require("express");
+const exphbs = require("express-handlebars");
 const router = express.Router();
+const app = express();
 
 const multer = require("multer");
 const AWS = require("aws-sdk");
 const ffmpeg = require("fluent-ffmpeg");
 const fs = require("fs");
+const { Stream } = require("stream");
+const { Console } = require("console");
 
 const s3 = new AWS.S3();
 const sqs = new AWS.SQS({ region: "ap-southeast-2" });
@@ -21,6 +25,22 @@ AWS.config.update({
   sessionToken: process.env.AWS_SESSION_TOKEN,
   region: "ap-southeast-2",
 });
+
+// Retrieve the object from S3
+async function getObjectFromS3() {
+  const params = {
+    Bucket: s3Bucket,
+    Key: "output.gif",
+  };
+
+  try {
+    const data = await s3.getObject(params).promise();
+    return data; // Return the data received from S3.
+  } catch (err) {
+    console.error("Error:", err);
+    throw err; // Rethrow the error so that it can be handled by the caller.
+  }
+}
 
 function uploadToS3(filePath, callback) {
   const uploadParams = {
@@ -69,7 +89,7 @@ router.get("/", function (req, res, next) {
 });
 
 // Upload Page
-router.post("/upload", upload.single("video"), (req, res) => {
+router.post("/upload", upload.single("video"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded.");
   }
@@ -102,9 +122,6 @@ router.post("/upload", upload.single("video"), (req, res) => {
               // Delete the temporary files after upload.
               cleanupFiles([inputVideoFilePath]);
 
-              res
-                .status(200)
-                .send("File uploaded to S3 and message sent to SQS.");
             }
           });
         }
@@ -115,5 +132,16 @@ router.post("/upload", upload.single("video"), (req, res) => {
       res.status(500).send("Error during conversion");
     })
     .save(outputFilePath);
+
+    const s3Object = await getObjectFromS3();
+
+    if (s3Object.Body) {
+      // Create a data URI for the GIF content
+      const gifDataUri = `data:image/gif;base64,${s3Object.Body.toString("base64")}`;
+      res.render("Upload", { gifDataUri });
+    } else {
+      console.error("GIF content not found in S3 object.");
+      res.status(500).send("Error: GIF content not found");
+    }
 });
 module.exports = router;
