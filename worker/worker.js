@@ -25,6 +25,7 @@ AWS.config.update({
 
 function pollQueue() {
   console.log("Polling for messages...");
+  console.log("Polling for messages...");
   const params = {
     QueueUrl: sqsQueueUrl,
     MaxNumberOfMessages: 1,
@@ -39,8 +40,11 @@ function pollQueue() {
 
     if (data.Messages) {
       data.Messages.forEach((message) => {
-        processMessage(message);
+        downlaodS3AndProcessMessage(message);
       });
+    } else {
+      console.log("No messages to process...");
+      pollQueue();
     }
     pollQueue();
   });
