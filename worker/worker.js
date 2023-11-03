@@ -128,12 +128,13 @@ function processMessage(message) {
             });
           }
         });
-        cleanupFiles([inputFilePath, outputFilePath]);
       })
       .on("error", (err) => {
         console.error("Error during conversion:", err);
       })
       .save(outputFilePath);
+
+    cleanupFiles([inputFilePath, outputFilePath]);
   });
 
   // Handle any errors during the download.
