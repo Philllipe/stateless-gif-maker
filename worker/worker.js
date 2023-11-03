@@ -45,7 +45,6 @@ function pollQueue() {
       console.log("No messages to process...");
       pollQueue();
     }
-    pollQueue();
   });
 }
 
