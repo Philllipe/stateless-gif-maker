@@ -42,7 +42,6 @@ function pollQueue() {
         processMessage(message);
       });
     }
-    pollQueue();
   });
 }
 
@@ -115,6 +114,7 @@ function processMessage(message) {
                 console.error("SQS message deletion error:", err);
               } else {
                 console.log("SQS message deleted successfully");
+                pollQueue();
               }
             });
           }
@@ -125,6 +125,7 @@ function processMessage(message) {
       });
   });
 
+  console.log("OUT");
   // Delete the temporary video file.
   fs.unlink(localFilePath, (err) => {
     if (err) {
