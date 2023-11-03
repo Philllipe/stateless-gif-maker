@@ -1,14 +1,10 @@
 const express = require("express");
-const exphbs = require("express-handlebars");
 const router = express.Router();
-const app = express();
 
 const multer = require("multer");
 const AWS = require("aws-sdk");
 const ffmpeg = require("fluent-ffmpeg");
 const fs = require("fs");
-const { Stream } = require("stream");
-const { Console } = require("console");
 
 const s3 = new AWS.S3();
 const sqs = new AWS.SQS({ region: "ap-southeast-2" });
@@ -97,11 +93,25 @@ router.post("/upload", upload.single("video"), async (req, res) => {
   const inputVideoFilePath = req.file.path; // Use the uploaded video file.
   const outputFilePath = "downloads/output.gif"; // Specify the path where you want to save the output GIF.
 
-  ffmpeg(inputVideoFilePath)
-    .setStartTime("00:00:01")
-    .setDuration("5")
-    .size("1440x1080")
-    .fps(40)
+  // GIF parameters
+  const width = req.body.width;
+
+  const height = req.body.height;
+
+  const duration = req.body.duration;
+
+  const framerate = req.body.framerate;
+
+  let ffmpegCommand = ffmpeg(inputVideoFilePath);
+
+  if (width && height) ffmpegCommand = ffmpegCommand.size(`${width}x${height}`);
+  else if (width) ffmpegCommand = ffmpegCommand.size(`${width}x?`);
+  else if (height) ffmpegCommand = ffmpegCommand.size(`?x${height}`);
+
+  if (duration) ffmpegCommand = ffmpegCommand.setDuration(duration);
+  if (framerate) ffmpegCommand = ffmpegCommand.fps(framerate);
+
+  ffmpegCommand
     .toFormat("gif")
     .on("end", () => {
       // Conversion finished; send the GIF to the client or do further processing.
@@ -119,12 +129,12 @@ router.post("/upload", upload.single("video"), async (req, res) => {
               console.error("SQS message sending error:", sqsErr);
               res.status(500).send("Error sending message to SQS");
             } else {
-              // Delete the temporary files after upload.
-              cleanupFiles([inputVideoFilePath]);
-
+              console.log("SQS message sent successfully");
             }
           });
         }
+        // Delete the temporary files
+        cleanupFiles([inputVideoFilePath]);
       });
     })
     .on("error", (err) => {
@@ -133,15 +143,17 @@ router.post("/upload", upload.single("video"), async (req, res) => {
     })
     .save(outputFilePath);
 
-    const s3Object = await getObjectFromS3();
+  const s3Object = await getObjectFromS3();
 
-    if (s3Object.Body) {
-      // Create a data URI for the GIF content
-      const gifDataUri = `data:image/gif;base64,${s3Object.Body.toString("base64")}`;
-      res.render("Upload", { gifDataUri });
-    } else {
-      console.error("GIF content not found in S3 object.");
-      res.status(500).send("Error: GIF content not found");
-    }
+  if (s3Object.Body) {
+    // Create a data URI for the GIF content
+    const gifDataUri = `data:image/gif;base64,${s3Object.Body.toString(
+      "base64"
+    )}`;
+    res.render("Upload", { gifDataUri });
+  } else {
+    console.error("GIF content not found in S3 object.");
+    res.status(500).send("Error: GIF content not found");
+  }
 });
 module.exports = router;

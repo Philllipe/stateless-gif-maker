@@ -8,10 +8,10 @@
 
   <div class="grid content-center text-white rows-2">
     {{! NAVBAR }}
-    <nav class="bg-gray-900">
+    <nav class="p-4 bg-gray-900">
       <div>
-        <div class="h-20 px-2 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <h1 class="flex justify-center text-6xl">
+        <div class="h-20 p-2 mx-auto max-w-7xl sm:px-6 lg:px-8">
+          <h1 class="flex justify-center font-serif text-6xl font-bold">
             GIF MAKER
           </h1>
         </div>
@@ -22,37 +22,64 @@
     <body class="bg-gray-800">
       <div class="grid justify-center mt-20">
         <form action="/upload" method="post" enctype="multipart/form-data">
-          <div class="grid grid-cols-1 justify-items-center">
+          <div class="grid grid-cols-1 grid-rows-2 justify-items-center">
+            <div class="space-y-8">
+              <input
+                type="file"
+                name="video"
+                accept="video/*"
+                class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+              />
 
-            <input
-              type="file"
-              name="video"
-              accept="video/*"
-              class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
-            />
+              <label for="width"></label>
+              <input
+                type="text"
+                name="width"
+                id="width"
+                class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                placeholder="Enter width"
+              />
 
-            <label for="size">Size:</label>
-            <input
-              type="text"
-              name="size"
-              id="size"
-              placeholder="Enter size (e.g., 640x480)"
-            />
+              <label for="height"></label>
+              <input
+                type="text"
+                name="height"
+                id="height"
+                class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                placeholder="Enter height"
+              />
 
-            <label for="duration">Duration (seconds):</label>
-            <input
-              type="text"
-              name="duration"
-              id="duration"
-              placeholder="Enter duration (e.g., 5)"
-            />
+              <label for="duration"></label>
+              <input
+                type="text"
+                name="duration"
+                id="duration"
+                class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                placeholder="Enter duration (seconds)"
+              />
 
-            <button
-              type="submit"
-              class="mt-20 rounded-md bg-indigo-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            >
-              Convert to GIF
-            </button>
+              <label for="framerate"></label>
+              <select
+                name="framerate"
+                id="framerate"
+                class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              >
+                <option value="10">10fps</option>
+                <option value="20">20fps</option>
+                <option value="30">30fps</option>
+                <option value="40">40fps</option>
+                <option value="50">50fps</option>
+                <option value="60">60fps</option>
+              </select>
+            </div>
+            <div class="mt-14">
+              <button
+                type="submit"
+                class="rounded-md bg-indigo-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              >
+                Convert to GIF
+              </button>
+            </div>
 
           </div>
         </form>
