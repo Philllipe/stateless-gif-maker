@@ -136,7 +136,7 @@ function processMessage(message) {
             });
           }
         });
-        cleanupFiles([inputFilePath]);
+        cleanupFiles([inputFilePath, outputFilePath]);
       })
       .on("error", (err) => {
         console.error("Error during conversion:", err);
