@@ -96,6 +96,7 @@ function processMessage(message) {
 
     console.log("Converting to GIF...");
     const outputFilePath = path.join("./temp", `${videoID}.gif`);
+    const s3GIFObjectKey = `${videoID}.gif`;
 
     ffmpegCommand
       .toFormat("gif")
@@ -103,7 +104,7 @@ function processMessage(message) {
         // Conversion finished; send the GIF back to S3, overwriting the original file.
         const uploadParams = {
           Bucket: s3Bucket,
-          Key: s3ObjectKey, // Use the original video file name.
+          Key: s3GIFObjectKey, // Use the original video file name.
           Body: fs.createReadStream(outputFilePath),
         };
 
@@ -113,28 +114,42 @@ function processMessage(message) {
           } else {
             console.log("GIF file uploaded to S3:", data.Location);
 
-            // Delete the message from the queue.
-            const deleteParams = {
-              QueueUrl: sqsQueueUrl,
-              ReceiptHandle: message.ReceiptHandle,
+            // Delete the original .mp4 file from S3
+            const deleteMP4Params = {
+              Bucket: s3Bucket,
+              Key: s3ObjectKey,
             };
 
-            sqs.deleteMessage(deleteParams, (err, data) => {
+            s3.deleteObject(deleteMP4Params, (err, data) => {
               if (err) {
-                console.error("SQS message deletion error:", err);
+                console.error("Error deleting original .mp4:", err);
               } else {
-                console.log("SQS message deleted successfully");
+                console.log("Original .mp4 file deleted from S3");
               }
+
+              // Delete the message from the queue.
+              const deleteParams = {
+                QueueUrl: sqsQueueUrl,
+                ReceiptHandle: message.ReceiptHandle,
+              };
+
+              sqs.deleteMessage(deleteParams, (err, data) => {
+                if (err) {
+                  console.error("SQS message deletion error:", err);
+                } else {
+                  console.log("SQS message deleted successfully");
+                  pollQueue();
+                }
+              });
             });
           }
+          cleanupFiles([inputFilePath, outputFilePath]);
         });
       })
       .on("error", (err) => {
         console.error("Error during conversion:", err);
       })
       .save(outputFilePath);
-
-    cleanupFiles([inputFilePath, outputFilePath]);
   });
 
   // Handle any errors during the download.
