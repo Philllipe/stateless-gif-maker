@@ -94,13 +94,11 @@ router.post("/upload", upload.single("video"), async (req, res) => {
   const videoID = `${Date.now()}`; // Generate a unique video ID
 
   // GIF parameters
-
+  const parameters = {};
   const width = req.body.width;
   const height = req.body.height;
   const duration = req.body.duration;
   const framerate = req.body.framerate;
-
-  const parameters = {};
 
   if (width && height) parameters.size = `${width}x${height}`;
   else if (width) parameters.size = `${width}x?`;

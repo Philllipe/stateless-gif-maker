@@ -48,21 +48,26 @@ function pollQueue() {
 }
 
 function processMessage(message) {
-  const s3ObjectUrl = message.Body;
-  const videoID = path.basename(s3ObjectUrl, ".mp4"); // Extract video ID from the S3 URL.
+  // Extract the videoID and construct the S3 object URL
+  const messageBody = JSON.parse(message.Body);
+  const videoID = messageBody.videoID;
+  const s3ObjectUrl = `https://${s3Bucket}.s3.amazonaws.com/${videoID}.mp4`;
+  const gifFilePath = path.join("./temp", `${videoID}.gif`);
 
-  const gifFilePath = path.join(os.tmpdir(), `${videoID}.gif`);
-
-  // Extract parameters like width, height, duration, and framerate from the message attributes.
-  const size = message.MessageAttributes.size.StringValue;
-  const duration = message.MessageAttributes.duration.StringValue;
-  const framerate = message.MessageAttributes.framerate.StringValue;
+  // Extract parameters like size, duration, and framerate from the message body.
+  const parameters = messageBody.parameters;
+  console.log(videoID);
+  console.log(parameters);
 
   let ffmpegCommand = ffmpeg(s3ObjectUrl);
 
-  if (size) ffmpegCommand = ffmpegCommand.size(size);
-  if (duration) ffmpegCommand = ffmpegCommand.setDuration(duration);
-  if (framerate) ffmpegCommand = ffmpegCommand.fps(framerate);
+  if (parameters.size) ffmpegCommand = ffmpegCommand.size(parameters.size);
+
+  if (parameters.duration)
+    ffmpegCommand = ffmpegCommand.setDuration(parameters.duration);
+
+  if (parameters.framerate)
+    ffmpegCommand = ffmpegCommand.fps(parameters.framerate);
 
   ffmpegCommand
     .toFormat("gif")
@@ -84,15 +89,14 @@ function processMessage(message) {
     })
     .on("error", (err) => {
       console.error("Error during conversion:", err);
-    })
-    .save(gifFilePath);
+    });
 
-  // Delete the temporary files.
-  fs.unlink(gifFilePath, (err) => {
-    if (err) {
-      console.error("Error deleting temporary file:", err);
-    }
-  });
+  // // Delete the temporary files.
+  // fs.unlink(gifFilePath, (err) => {
+  //   if (err) {
+  //     console.error("Error deleting temporary file:", err);
+  //   }
+  // });
 
   // Delete the message from the queue.
   const deleteParams = {
