@@ -25,6 +25,7 @@ AWS.config.update({
 });
 
 function pollQueue() {
+  console.log("Polling for messages...");
   const params = {
     QueueUrl: sqsQueueUrl,
     MaxNumberOfMessages: 1,
@@ -48,7 +49,7 @@ function pollQueue() {
 }
 
 function processMessage(message) {
-  // Extract the videoID and construct the S3 object URL
+  // Extract the videoID
   const messageBody = JSON.parse(message.Body);
   const videoID = messageBody.videoID;
   const s3ObjectKey = `${videoID}.mp4`;
@@ -56,6 +57,11 @@ function processMessage(message) {
   // Create a writable stream to store the video file locally.
   const localFilePath = path.join("./temp", s3ObjectKey);
   const writeStream = fs.createWriteStream(localFilePath);
+
+  // Create parameters from the message body.
+  const parameters = messageBody.parameters;
+  console.log(videoID);
+  console.log(parameters);
 
   // Fetch the video file from S3 and store it locally.
   const s3Params = {
@@ -72,7 +78,6 @@ function processMessage(message) {
 
     // Continue with the rest of the processing.
     let ffmpegCommand = ffmpeg(localFilePath);
-    parameters = messageBody.parameters;
 
     if (parameters.size) ffmpegCommand = ffmpegCommand.size(parameters.size);
 
@@ -82,6 +87,7 @@ function processMessage(message) {
     if (parameters.framerate)
       ffmpegCommand = ffmpegCommand.fps(parameters.framerate);
 
+    console.log("Converting to GIF");
     ffmpegCommand
       .toFormat("gif")
       .on("end", () => {
@@ -97,14 +103,21 @@ function processMessage(message) {
             console.error("S3 upload error:", err);
           } else {
             console.log("GIF file uploaded to S3:", data.Location);
-          }
 
-          // Delete the temporary video file.
-          fs.unlink(localFilePath, (err) => {
-            if (err) {
-              console.error("Error deleting temporary file:", err);
-            }
-          });
+            // Delete the message from the queue.
+            const deleteParams = {
+              QueueUrl: sqsQueueUrl,
+              ReceiptHandle: message.ReceiptHandle,
+            };
+
+            sqs.deleteMessage(deleteParams, (err, data) => {
+              if (err) {
+                console.error("SQS message deletion error:", err);
+              } else {
+                console.log("SQS message deleted successfully");
+              }
+            });
+          }
         });
       })
       .on("error", (err) => {
@@ -112,23 +125,16 @@ function processMessage(message) {
       });
   });
 
+  // Delete the temporary video file.
+  fs.unlink(localFilePath, (err) => {
+    if (err) {
+      console.error("Error deleting temporary file:", err);
+    }
+  });
+
   // Handle any errors during the download.
   s3ReadStream.on("error", (err) => {
     console.error("Error downloading video from S3:", err);
-  });
-
-  // Delete the message from the queue.
-  const deleteParams = {
-    QueueUrl: sqsQueueUrl,
-    ReceiptHandle: message.ReceiptHandle,
-  };
-
-  sqs.deleteMessage(deleteParams, (err, data) => {
-    if (err) {
-      console.error("SQS message deletion error:", err);
-    } else {
-      console.log("SQS message deleted successfully");
-    }
   });
 }
 
