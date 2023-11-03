@@ -21,21 +21,21 @@ AWS.config.update({
   region: "ap-southeast-2",
 });
 
-// Retrieve the object from S3
-async function getObjectFromS3() {
-  const params = {
-    Bucket: s3Bucket,
-    Key: "output.gif",
-  };
+// // Retrieve the object from S3
+// async function getObjectFromS3() {
+//   const params = {
+//     Bucket: s3Bucket,
+//     Key: "output.gif",
+//   };
 
-  try {
-    const data = await s3.getObject(params).promise();
-    return data; // Return the data received from S3.
-  } catch (err) {
-    console.error("Error:", err);
-    throw err; // Rethrow the error so that it can be handled by the caller.
-  }
-}
+//   try {
+//     const data = await s3.getObject(params).promise();
+//     return data; // Return the data received from S3.
+//   } catch (err) {
+//     console.error("Error:", err);
+//     throw err; // Rethrow the error so that it can be handled by the caller.
+//   }
+// }
 
 async function uploadVideoToS3(filePath, videoID) {
   const uploadParams = {
@@ -46,6 +46,8 @@ async function uploadVideoToS3(filePath, videoID) {
 
   try {
     await s3.upload(uploadParams).promise();
+    // log the location
+    console.log(`File uploaded successfully uploaded to ${s3Bucket}`);
   } catch (err) {
     console.error("S3 upload error:", err);
     throw err; // You might want to handle this error differently in your application.
@@ -60,6 +62,7 @@ async function sendSQSMessage(videoID, parameters) {
 
   try {
     await sqs.sendMessage(params).promise();
+    console.log("SQS message sent successfully");
   } catch (err) {
     console.error("SQS message sending error:", err);
     throw err; // You might want to handle this error differently in your application.
