@@ -72,6 +72,7 @@ function processMessage(message) {
 
     // Continue with the rest of the processing.
     let ffmpegCommand = ffmpeg(localFilePath);
+    parameters = messageBody.parameters;
 
     if (parameters.size) ffmpegCommand = ffmpegCommand.size(parameters.size);
 
