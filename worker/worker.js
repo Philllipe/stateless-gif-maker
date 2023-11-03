@@ -25,7 +25,6 @@ AWS.config.update({
 
 function pollQueue() {
   console.log("Polling for messages...");
-  console.log("Polling for messages...");
   const params = {
     QueueUrl: sqsQueueUrl,
     MaxNumberOfMessages: 1,
@@ -84,25 +83,18 @@ function processMessage(message) {
 
   // Wait for the download to finish.
   s3ReadStream.on("end", () => {
-    console.log("Download complete");
-
+    console.log("Video downloaded from S3...");
     // Continue with the rest of the processing.
     let ffmpegCommand = ffmpeg(inputFilePath);
-    console.log(parameters);
 
-    if (parameters.size) {
-      ffmpegCommand = ffmpegCommand.size(parameters.size);
-      console.log("sieze", parameters.size);
-    }
+    if (parameters.size) ffmpegCommand = ffmpegCommand.size(parameters.size);
     if (parameters.duration)
       ffmpegCommand = ffmpegCommand.setDuration(parameters.duration);
 
-    if (parameters.framerate) {
+    if (parameters.framerate)
       ffmpegCommand = ffmpegCommand.fps(parameters.framerate);
-      console.log("framerate", parameters.framerate);
-    }
-    console.log("Converting to GIF");
 
+    console.log("Converting to GIF...");
     const outputFilePath = path.join("./temp", `${videoID}.gif`);
 
     ffmpegCommand
