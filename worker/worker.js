@@ -51,7 +51,7 @@ function processMessage(message) {
   // Extract the videoID and construct the S3 object URL
   const messageBody = JSON.parse(message.Body);
   const videoID = messageBody.videoID;
-  const s3ObjectUrl = `${videoID}.mp4`;
+  const s3ObjectKey = `${videoID}.mp4`;
 
   // Create a writable stream to store the video file locally.
   const localFilePath = path.join("./temp", s3ObjectKey);
