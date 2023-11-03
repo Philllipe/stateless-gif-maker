@@ -1,4 +1,5 @@
 <html lang="en">
+
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -19,43 +20,54 @@
     </nav>
 
     {{! BODY }}
+
     <body class="bg-gray-800">
       <div class="grid justify-center mt-20">
         <form action="/upload" method="post" enctype="multipart/form-data">
           <div class="grid grid-cols-1 grid-rows-2 justify-items-center">
             <div class="space-y-8">
+
               <input
                 type="file"
                 name="video"
                 accept="video/*"
+                required
                 class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
               />
 
               <label for="width"></label>
               <input
-                type="text"
+                type="number"
                 name="width"
                 id="width"
                 class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                 placeholder="Enter width"
+                step="1"
+                max="3840"
+                min="1"
               />
 
               <label for="height"></label>
               <input
-                type="text"
+                type="number"
                 name="height"
                 id="height"
                 class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                 placeholder="Enter height"
+                step="1"
+                max="2160"
+                min="1"
               />
 
               <label for="duration"></label>
               <input
-                type="text"
+                type="number"
                 name="duration"
                 id="duration"
                 class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                 placeholder="Enter duration (seconds)"
+                step="1"
+                min="1"
               />
 
               <label for="framerate"></label>
@@ -64,6 +76,7 @@
                 id="framerate"
                 class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
               >
+                <option value="">default fps</option>
                 <option value="10">10fps</option>
                 <option value="20">20fps</option>
                 <option value="30">30fps</option>
@@ -76,14 +89,15 @@
               <button
                 type="submit"
                 class="rounded-md bg-indigo-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                onsubmit="return validateForm()"
               >
-                Convert to GIF
+                Convert To GIF
               </button>
             </div>
-
           </div>
         </form>
       </div>
     </body>
   </div>
+
 </html>

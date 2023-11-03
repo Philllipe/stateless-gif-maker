@@ -3,7 +3,6 @@ const router = express.Router();
 
 const multer = require("multer");
 const AWS = require("aws-sdk");
-const ffmpeg = require("fluent-ffmpeg");
 const fs = require("fs");
 
 const s3 = new AWS.S3();
@@ -38,37 +37,33 @@ async function getObjectFromS3() {
   }
 }
 
-function uploadToS3(filePath, callback) {
-  const gifID = `${Date.now()}.gif`; // Specify a unique name of the output GIF file.
-
+async function uploadVideoToS3(filePath, videoID) {
   const uploadParams = {
     Bucket: s3Bucket,
-    Key: gifID, // Object key in S3.
+    Key: `${videoID}.mp4`, // Object key in S3.
     Body: fs.createReadStream(filePath),
   };
 
-  s3.upload(uploadParams, (err, data) => {
-    if (err) {
-      callback(err, null);
-    } else {
-      callback(null, data);
-    }
-  });
+  try {
+    await s3.upload(uploadParams).promise();
+  } catch (err) {
+    console.error("S3 upload error:", err);
+    throw err; // You might want to handle this error differently in your application.
+  }
 }
 
-function sendSQSMessage(s3ObjectUrl, callback) {
+async function sendSQSMessage(videoID, parameters) {
   const params = {
-    MessageBody: s3ObjectUrl, // Include the S3 object URL in the message.
+    MessageBody: JSON.stringify({ videoID, parameters }), // Include the video ID and parameters in the message.
     QueueUrl: sqsQueueUrl,
   };
 
-  sqs.sendMessage(params, (err, data) => {
-    if (err) {
-      callback(err);
-    } else {
-      callback(null);
-    }
-  });
+  try {
+    await sqs.sendMessage(params).promise();
+  } catch (err) {
+    console.error("SQS message sending error:", err);
+    throw err; // You might want to handle this error differently in your application.
+  }
 }
 
 function cleanupFiles(files) {
@@ -93,66 +88,28 @@ router.post("/upload", upload.single("video"), async (req, res) => {
   }
 
   const inputVideoFilePath = req.file.path; // Use the uploaded video file.
-  const outputFilePath = "downloads/output.gif"; // Specify the path where you want to save the output GIF.
+  const videoID = `${Date.now()}`; // Generate a unique video ID
 
   // GIF parameters
+
   const width = req.body.width;
   const height = req.body.height;
   const duration = req.body.duration;
   const framerate = req.body.framerate;
 
-  let ffmpegCommand = ffmpeg(inputVideoFilePath);
+  const parameters = {};
 
-  if (width && height) ffmpegCommand = ffmpegCommand.size(`${width}x${height}`);
-  else if (width) ffmpegCommand = ffmpegCommand.size(`${width}x?`);
-  else if (height) ffmpegCommand = ffmpegCommand.size(`?x${height}`);
+  if (width && height) parameters.size = `${width}x${height}`;
+  else if (width) parameters.size = `${width}x?`;
+  else if (height) parameters.size = `?x${height}`;
 
-  if (duration) ffmpegCommand = ffmpegCommand.setDuration(duration);
-  if (framerate) ffmpegCommand = ffmpegCommand.fps(framerate);
+  if (duration) parameters.duration = duration;
+  if (framerate) parameters.framerate = framerate;
 
-  ffmpegCommand
-    .toFormat("gif")
-    .on("end", () => {
-      // Conversion finished; send the GIF to the client or do further processing.
-      // Upload the converted GIF to Amazon S3.
-      uploadToS3(outputFilePath, (err, s3Data) => {
-        if (err) {
-          console.error("S3 upload error:", err);
-          res.status(500).send("Error during S3 upload");
-        } else {
-          console.log("File uploaded to S3:", s3Data.Location);
+  await uploadVideoToS3(inputVideoFilePath, videoID);
+  await sendSQSMessage(videoID, parameters);
 
-          // Send a message to Amazon SQS.
-          sendSQSMessage(s3Data.Location, (sqsErr) => {
-            if (sqsErr) {
-              console.error("SQS message sending error:", sqsErr);
-              res.status(500).send("Error sending message to SQS");
-            } else {
-              console.log("SQS message sent successfully");
-            }
-          });
-        }
-        // Delete the temporary files
-        cleanupFiles([inputVideoFilePath]);
-      });
-    })
-    .on("error", (err) => {
-      console.error("Error:", err);
-      res.status(500).send("Error during conversion");
-    })
-    .save(outputFilePath);
-
-  const s3Object = await getObjectFromS3();
-
-  if (s3Object.Body) {
-    // Create a data URI for the GIF content
-    const gifDataUri = `data:image/gif;base64,${s3Object.Body.toString(
-      "base64"
-    )}`;
-    res.render("Upload", { gifDataUri });
-  } else {
-    console.error("GIF content not found in S3 object.");
-    res.status(500).send("Error: GIF content not found");
-  }
+  res.status(200).send("File uploaded successfully.");
+  cleanupFiles([inputVideoFilePath]);
 });
 module.exports = router;
