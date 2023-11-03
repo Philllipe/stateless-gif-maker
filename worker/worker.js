@@ -40,7 +40,7 @@ function pollQueue() {
 
     if (data.Messages) {
       data.Messages.forEach((message) => {
-        downlaodS3AndProcessMessage(message);
+        processMessage(message);
       });
     } else {
       console.log("No messages to process...");
