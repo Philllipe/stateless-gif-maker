@@ -2,9 +2,7 @@ const express = require("express");
 const AWS = require("aws-sdk");
 const ffmpeg = require("fluent-ffmpeg");
 const fs = require("fs");
-const os = require("os");
 const path = require("path");
-const { param } = require("../frontend/routes");
 
 require("dotenv").config();
 
