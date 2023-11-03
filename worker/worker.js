@@ -43,8 +43,6 @@ function pollQueue() {
         processMessage(message);
       });
     }
-
-    pollQueue();
   });
 }
 
@@ -60,8 +58,6 @@ function processMessage(message) {
 
   // Create parameters from the message body.
   const parameters = messageBody.parameters;
-  console.log(videoID);
-  console.log(parameters);
 
   // Fetch the video file from S3 and store it locally.
   const s3Params = {
@@ -87,9 +83,10 @@ function processMessage(message) {
     if (parameters.framerate)
       ffmpegCommand = ffmpegCommand.fps(parameters.framerate);
 
+    ffmpegCommand.toFormat("gif");
+
     console.log("Converting to GIF");
     ffmpegCommand
-      .toFormat("gif")
       .on("end", () => {
         // Conversion finished; send the GIF back to S3, overwriting the original file.
         const uploadParams = {
@@ -123,6 +120,7 @@ function processMessage(message) {
       .on("error", (err) => {
         console.error("Error during conversion:", err);
       });
+    ffmpegCommand.run();
   });
 
   // Delete the temporary video file.
