@@ -4,6 +4,7 @@ const ffmpeg = require("fluent-ffmpeg");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const { param } = require("../frontend/routes");
 
 require("dotenv").config();
 
@@ -43,6 +44,7 @@ function pollQueue() {
         processMessage(message);
       });
     }
+    pollQueue();
   });
 }
 
@@ -74,19 +76,22 @@ function processMessage(message) {
 
     // Continue with the rest of the processing.
     let ffmpegCommand = ffmpeg(localFilePath);
+    console.log(parameters);
 
-    if (parameters.size) ffmpegCommand = ffmpegCommand.size(parameters.size);
-
+    if (parameters.size) {
+      ffmpegCommand = ffmpegCommand.size(parameters.size);
+      console.log("sieze", parameters.size);
+    }
     if (parameters.duration)
       ffmpegCommand = ffmpegCommand.setDuration(parameters.duration);
 
-    if (parameters.framerate)
+    if (parameters.framerate) {
       ffmpegCommand = ffmpegCommand.fps(parameters.framerate);
-
-    ffmpegCommand.toFormat("gif");
-
+      console.log("framerate", parameters.framerate);
+    }
     console.log("Converting to GIF");
     ffmpegCommand
+      .toFormat("gif")
       .on("end", () => {
         // Conversion finished; send the GIF back to S3, overwriting the original file.
         const uploadParams = {
@@ -120,7 +125,6 @@ function processMessage(message) {
       .on("error", (err) => {
         console.error("Error during conversion:", err);
       });
-    ffmpegCommand.run();
   });
 
   // Delete the temporary video file.
