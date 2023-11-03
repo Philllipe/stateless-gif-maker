@@ -39,9 +39,11 @@ async function getObjectFromS3() {
 }
 
 function uploadToS3(filePath, callback) {
+  const gifID = `${Date.now()}.gif`; // Specify a unique name of the output GIF file.
+
   const uploadParams = {
     Bucket: s3Bucket,
-    Key: "output.gif", // Object key in S3.
+    Key: gifID, // Object key in S3.
     Body: fs.createReadStream(filePath),
   };
 
@@ -95,11 +97,8 @@ router.post("/upload", upload.single("video"), async (req, res) => {
 
   // GIF parameters
   const width = req.body.width;
-
   const height = req.body.height;
-
   const duration = req.body.duration;
-
   const framerate = req.body.framerate;
 
   let ffmpegCommand = ffmpeg(inputVideoFilePath);
