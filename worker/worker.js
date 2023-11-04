@@ -78,78 +78,97 @@ function processMessage(message) {
   const s3ReadStream = s3.getObject(s3Params).createReadStream();
   s3ReadStream.pipe(writeStream);
 
-  // Wait for the download to finish.
-  s3ReadStream.on("end", () => {
-    // Continue with the rest of the processing.
-    let ffmpegCommand = ffmpeg(inputFilePath);
+  // Set a visibility timeout for the message (e.g., 5 minutes = 300 seconds)
+  const visibilityTimeout = 300;
+  const visibilityParams = {
+    QueueUrl: sqsQueueUrl,
+    ReceiptHandle: message.ReceiptHandle,
+    VisibilityTimeout: visibilityTimeout,
+  };
 
-    if (parameters.size) ffmpegCommand = ffmpegCommand.size(parameters.size);
-    if (parameters.duration)
-      ffmpegCommand = ffmpegCommand.setDuration(parameters.duration);
+  sqs.changeMessageVisibility(visibilityParams, (err, data) => {
+    if (err) {
+      console.error("Error setting visibility timeout:", err);
+      return;
+    }
 
-    if (parameters.framerate)
-      ffmpegCommand = ffmpegCommand.fps(parameters.framerate);
+    // Wait for the download to finish.
+    s3ReadStream.on("end", () => {
+      console.log("Video downloaded from S3...");
+      // Continue with the rest of the processing.
+      let ffmpegCommand = ffmpeg(inputFilePath);
 
-    console.log("Converting to GIF...");
-    const outputFilePath = path.join("./temp", `${videoID}.gif`);
-    const s3GIFObjectKey = `${videoID}.gif`;
+      if (parameters.size) ffmpegCommand = ffmpegCommand.size(parameters.size);
+      if (parameters.duration)
+        ffmpegCommand = ffmpegCommand.setDuration(parameters.duration);
 
-    ffmpegCommand
-      .toFormat("gif")
-      .on("end", () => {
-        // Conversion finished; send the GIF back to S3, overwriting the original file.
-        const uploadParams = {
-          Bucket: s3Bucket,
-          Key: s3GIFObjectKey, // Use the original video file name.
-          Body: fs.createReadStream(outputFilePath),
-        };
+      if (parameters.framerate)
+        ffmpegCommand = ffmpegCommand.fps(parameters.framerate);
 
-        s3.upload(uploadParams, (err, data) => {
-          if (err) {
-            console.error("S3 upload error:", err);
-          } else {
-            console.log("GIF file uploaded to S3:", data.Location);
+      console.log(`Converting ${videoID} to GIF...`);
+      const outputFilePath = path.join("./temp", `${videoID}.gif`);
+      const s3GIFObjectKey = `${videoID}.gif`;
 
-            // Delete the original .mp4 file from S3
-            const deleteMP4Params = {
-              Bucket: s3Bucket,
-              Key: s3ObjectKey,
-            };
+      ffmpegCommand
+        .toFormat("gif")
+        .on("end", () => {
+          // Conversion finished; send the GIF back to S3, overwriting the original file.
+          const uploadParams = {
+            Bucket: s3Bucket,
+            Key: s3GIFObjectKey, // Use the original video file name.
+            Body: fs.createReadStream(outputFilePath),
+          };
 
-            s3.deleteObject(deleteMP4Params, (err, data) => {
-              if (err) {
-                console.error("Error deleting original .mp4:", err);
-              } else {
-                console.log("Original .mp4 file deleted from S3");
-              }
+          s3.upload(uploadParams, (err, data) => {
+            if (err) {
+              console.error("S3 upload error:", err);
+            } else {
+              console.log(
+                `Successfully converted ${videoID} to GIF`,
+                data.Location
+              );
 
-              // Delete the message from the queue.
-              const deleteParams = {
-                QueueUrl: sqsQueueUrl,
-                ReceiptHandle: message.ReceiptHandle,
+              // Delete the original .mp4 file from S3
+              const deleteMP4Params = {
+                Bucket: s3Bucket,
+                Key: s3ObjectKey,
               };
 
-              sqs.deleteMessage(deleteParams, (err, data) => {
+              s3.deleteObject(deleteMP4Params, (err, data) => {
                 if (err) {
-                  console.error("SQS message deletion error:", err);
+                  console.error("Error deleting original .mp4:", err);
                 } else {
-                  console.log("SQS message deleted successfully");
+                  console.log("Original .mp4 file deleted from S3");
                 }
-              });
-            });
-          }
-          cleanupFiles([inputFilePath, outputFilePath]);
-        });
-      })
-      .on("error", (err) => {
-        console.error("Error during conversion:", err);
-      })
-      .save(outputFilePath);
-  });
 
-  // Handle any errors during the download.
-  s3ReadStream.on("error", (err) => {
-    console.error("Error downloading video from S3:", err);
+                // Delete the message from the queue.
+                const deleteParams = {
+                  QueueUrl: sqsQueueUrl,
+                  ReceiptHandle: message.ReceiptHandle,
+                };
+
+                sqs.deleteMessage(deleteParams, (err, data) => {
+                  if (err) {
+                    console.error("SQS message deletion error:", err);
+                  } else {
+                    console.log("SQS message deleted successfully");
+                  }
+                });
+              });
+            }
+            cleanupFiles([inputFilePath, outputFilePath]);
+          });
+        })
+        .on("error", (err) => {
+          console.error("Error during conversion:", err);
+        })
+        .save(outputFilePath);
+    });
+
+    // Handle any errors during the download.
+    s3ReadStream.on("error", (err) => {
+      console.error("Error downloading video from S3:", err);
+    });
   });
 }
 
