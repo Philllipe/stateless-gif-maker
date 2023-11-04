@@ -41,8 +41,6 @@ function pollQueue() {
       data.Messages.forEach((message) => {
         processMessage(message);
       });
-    } else {
-      console.log("No messages to process...");
     }
     pollQueue();
   });
@@ -82,7 +80,6 @@ function processMessage(message) {
 
   // Wait for the download to finish.
   s3ReadStream.on("end", () => {
-    console.log("Video downloaded from S3...");
     // Continue with the rest of the processing.
     let ffmpegCommand = ffmpeg(inputFilePath);
 
