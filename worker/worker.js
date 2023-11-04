@@ -43,8 +43,8 @@ function pollQueue() {
       });
     } else {
       console.log("No messages to process...");
-      pollQueue();
     }
+    pollQueue();
   });
 }
 
@@ -137,7 +137,6 @@ function processMessage(message) {
                   console.error("SQS message deletion error:", err);
                 } else {
                   console.log("SQS message deleted successfully");
-                  pollQueue();
                 }
               });
             });
