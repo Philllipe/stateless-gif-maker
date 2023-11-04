@@ -4,8 +4,6 @@ const ffmpeg = require("fluent-ffmpeg");
 const fs = require("fs");
 const path = require("path");
 
-require("dotenv").config();
-
 const app = express();
 const port = 8000;
 
@@ -16,12 +14,14 @@ const s3Bucket = "n11029935-assignment-2";
 const sqsQueueUrl =
   "https://sqs.ap-southeast-2.amazonaws.com/901444280953/n11029935-sqs-queue";
 
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  sessionToken: process.env.AWS_SESSION_TOKEN,
-  region: "ap-southeast-2",
-});
+// require("dotenv").config();
+
+// AWS.config.update({
+//   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+//   sessionToken: process.env.AWS_SESSION_TOKEN,
+//   region: "ap-southeast-2",
+// });
 
 function pollQueue() {
   console.log("Polling for messages...");
