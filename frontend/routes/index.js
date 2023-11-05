@@ -37,10 +37,10 @@ AWS.config.update({
 //   }
 // }
 
-async function uploadVideoToS3(filePath, videoID) {
+async function uploadVideoToS3(filePath, videoID, fileExtension) {
   const uploadParams = {
     Bucket: s3Bucket,
-    Key: `${videoID}.mp4`, // Object key in S3.
+    Key: `${videoID}.${fileExtension}`,
     Body: fs.createReadStream(filePath),
   };
 
@@ -54,9 +54,9 @@ async function uploadVideoToS3(filePath, videoID) {
   }
 }
 
-async function sendSQSMessage(videoID, parameters) {
+async function sendSQSMessage(videoID, fileExtension, parameters) {
   const params = {
-    MessageBody: JSON.stringify({ videoID, parameters }), // Include the video ID and parameters in the message.
+    MessageBody: JSON.stringify({ videoID, fileExtension, parameters }), // Include the video ID and parameters in the message.
     QueueUrl: sqsQueueUrl,
   };
 
@@ -92,6 +92,7 @@ router.post("/upload", upload.single("video"), async (req, res) => {
 
   const inputVideoFilePath = req.file.path; // Use the uploaded video file.
   const videoID = `${Date.now()}`; // Generate a unique video ID
+  const fileExtension = req.file.originalname.split(".").pop(); // Get the extension from the original filename.
 
   // GIF parameters
   const parameters = {};
@@ -107,8 +108,8 @@ router.post("/upload", upload.single("video"), async (req, res) => {
   if (duration) parameters.duration = duration;
   if (framerate) parameters.framerate = framerate;
 
-  await uploadVideoToS3(inputVideoFilePath, videoID);
-  await sendSQSMessage(videoID, parameters);
+  await uploadVideoToS3(inputVideoFilePath, videoID, fileExtension);
+  await sendSQSMessage(videoID, fileExtension, parameters);
 
   res.status(200).send("File uploaded successfully.");
   cleanupFiles([inputVideoFilePath]);
