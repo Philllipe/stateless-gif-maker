@@ -8,18 +8,18 @@ const fs = require("fs");
 const s3 = new AWS.S3();
 const sqs = new AWS.SQS({ region: "ap-southeast-2" });
 
-const s3Bucket = "n11029935-assignment-2";
-const sqsQueueUrl =
-  "https://sqs.ap-southeast-2.amazonaws.com/901444280953/n11029935-sqs-queue";
-
-const upload = multer({ dest: "uploads/" });
-
 AWS.config.update({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   sessionToken: process.env.AWS_SESSION_TOKEN,
   region: "ap-southeast-2",
 });
+
+const s3Bucket = "n11029935-assignment-2";
+const sqsQueueUrl =
+  "https://sqs.ap-southeast-2.amazonaws.com/901444280953/n11029935-sqs-queue";
+
+const upload = multer({ dest: "uploads/" });
 
 // // Retrieve the object from S3
 // async function getObjectFromS3() {
@@ -37,10 +37,10 @@ AWS.config.update({
 //   }
 // }
 
-async function uploadVideoToS3(filePath, videoID, fileExtension) {
+async function uploadVideoToS3(filePath, uniqueID, fileExtension) {
   const uploadParams = {
     Bucket: s3Bucket,
-    Key: `${videoID}.${fileExtension}`,
+    Key: `${uniqueID}.${fileExtension}`,
     Body: fs.createReadStream(filePath),
   };
 
@@ -54,9 +54,13 @@ async function uploadVideoToS3(filePath, videoID, fileExtension) {
   }
 }
 
-async function sendSQSMessage(videoID, fileExtension, parameters) {
+async function sendSQSMessage(uniqueID, fileExtension, parameters) {
   const params = {
-    MessageBody: JSON.stringify({ videoID, fileExtension, parameters }), // Include the video ID and parameters in the message.
+    MessageBody: JSON.stringify({
+      uniqueID: uniqueID,
+      fileExtension,
+      parameters,
+    }), // Include the video ID and parameters in the message.
     QueueUrl: sqsQueueUrl,
   };
 
@@ -81,17 +85,17 @@ function cleanupFiles(files) {
 
 // Home Page
 router.get("/", function (req, res, next) {
-  res.render("index", { title: "Home Page" });
+  res.render("index");
 });
 
 // Upload Page
-router.post("/upload", upload.single("video"), async (req, res) => {
+router.post("/convert", upload.single("video"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded.");
   }
 
   const inputVideoFilePath = req.file.path; // Use the uploaded video file.
-  const videoID = `${Date.now()}`; // Generate a unique video ID
+  const uniqueID = `${Date.now()}`; // Generate a unique video ID
   const fileExtension = req.file.originalname.split(".").pop(); // Get the extension from the original filename.
 
   // GIF parameters
@@ -108,10 +112,10 @@ router.post("/upload", upload.single("video"), async (req, res) => {
   if (duration) parameters.duration = duration;
   if (framerate) parameters.framerate = framerate;
 
-  await uploadVideoToS3(inputVideoFilePath, videoID, fileExtension);
-  await sendSQSMessage(videoID, fileExtension, parameters);
+  await uploadVideoToS3(inputVideoFilePath, uniqueID, fileExtension);
+  await sendSQSMessage(uniqueID, fileExtension, parameters);
 
-  res.status(200).send("File uploaded successfully.");
+  res.status(200).redirect(`/convert/${uniqueID}`);
   cleanupFiles([inputVideoFilePath]);
 });
 module.exports = router;

@@ -14,14 +14,14 @@ const s3Bucket = "n11029935-assignment-2";
 const sqsQueueUrl =
   "https://sqs.ap-southeast-2.amazonaws.com/901444280953/n11029935-sqs-queue";
 
-// require("dotenv").config();
-//
-// AWS.config.update({
-//   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-//   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-//   sessionToken: process.env.AWS_SESSION_TOKEN,
-//   region: "ap-southeast-2",
-// });
+require("dotenv").config();
+
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  sessionToken: process.env.AWS_SESSION_TOKEN,
+  region: "ap-southeast-2",
+});
 
 function pollQueue() {
   const params = {
@@ -56,11 +56,11 @@ function cleanupFiles(files) {
 }
 
 function processMessage(message) {
-  // Extract the videoID
+  // Extract the uniqueID
   const messageBody = JSON.parse(message.Body);
-  const videoID = messageBody.videoID;
+  const uniqueID = messageBody.uniqueID;
   const fileExtension = messageBody.fileExtension;
-  const s3ObjectKey = `${videoID}.${fileExtension}`;
+  const s3ObjectKey = `${uniqueID}.${fileExtension}`;
 
   // Create a writable stream to store the video file locally.
   const inputFilePath = path.join("./temp", s3ObjectKey);
@@ -106,10 +106,10 @@ function processMessage(message) {
       if (parameters.framerate)
         ffmpegCommand = ffmpegCommand.fps(parameters.framerate);
 
-      const outputFilePath = path.join("./temp", `${videoID}.gif`);
-      const s3GIFObjectKey = `${videoID}.gif`;
+      const outputFilePath = path.join("./temp", `${uniqueID}.gif`);
+      const s3GIFObjectKey = `${uniqueID}.gif`;
 
-      console.log(`Converting ${videoID} to GIF...`);
+      console.log(`Converting ${uniqueID} to GIF...`);
       ffmpegCommand
         .toFormat("gif")
         .on("end", () => {
@@ -124,7 +124,7 @@ function processMessage(message) {
             if (err) {
               console.error("S3 upload error:", err);
             } else {
-              console.log(`Successfully converted ${videoID} to GIF`);
+              console.log(`Successfully converted ${uniqueID} to GIF`);
             }
             cleanupFiles([inputFilePath, outputFilePath]);
           });
