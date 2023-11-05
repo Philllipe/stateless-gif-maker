@@ -164,6 +164,10 @@ function processMessage(message) {
   });
 }
 
+app.get("/", (req, res) => {
+  res.send("Worker is running"); // Send a response when the root URL is accessed.
+});
+
 pollQueue();
 
 app.listen(port, () => {
