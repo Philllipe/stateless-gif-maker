@@ -6,7 +6,7 @@ const path = require("path");
 
 const s3 = new AWS.S3();
 const s3Bucket = "n11029935-assignment-2";
-const pollInterval = 5000; // Poll every 5 seconds (adjust as needed).
+const pollInterval = 5000; // Poll every 5 seconds
 
 AWS.config.update({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
