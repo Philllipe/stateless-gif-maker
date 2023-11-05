@@ -89,7 +89,7 @@ router.get("/", function (req, res, next) {
 });
 
 // Upload Page
-router.post("/convert", upload.single("video"), async (req, res) => {
+router.post("/gif", upload.single("video"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded.");
   }
@@ -115,7 +115,7 @@ router.post("/convert", upload.single("video"), async (req, res) => {
   await uploadVideoToS3(inputVideoFilePath, uniqueID, fileExtension);
   await sendSQSMessage(uniqueID, fileExtension, parameters);
 
-  res.status(200).redirect(`/convert/${uniqueID}`);
+  res.status(200).redirect(`/gif/${uniqueID}`);
   cleanupFiles([inputVideoFilePath]);
 });
 module.exports = router;

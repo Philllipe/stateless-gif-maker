@@ -1,102 +1,85 @@
 <html lang="en">
 
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Video To GIF Converter</title>
-    <link rel="stylesheet" href="styles/styles.css" />
-  </head>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Video To GIF Converter</title>
+  <link rel="stylesheet" href="styles/styles.css" />
+</head>
 
-  <div class="grid content-center text-white rows-2">
-    {{! NAVBAR }}
-    <nav class="p-4 bg-gray-900">
-      <div>
-        <div class="h-20 p-2 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <h1 class="flex justify-center font-serif text-6xl font-bold">
-            GIF MAKER
-          </h1>
-        </div>
+<div class="grid content-center text-white rows-2">
+  {{! NAVBAR }}
+  <nav class="p-4 bg-gray-900">
+    <div>
+      <div class="h-20 p-2 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <h1 class="flex justify-center font-serif text-6xl font-bold">
+          GIF MAKER
+        </h1>
       </div>
-    </nav>
+    </div>
+  </nav>
 
-    {{! BODY }}
+  {{! BODY }}
 
-    <body class="bg-gray-800">
-      <div class="grid justify-center mt-20">
-        <form action="/convert" method="post" enctype="multipart/form-data">
-          <div class="grid grid-cols-1 grid-rows-2 justify-items-center">
-            <div class="space-y-8">
+  <body class="bg-gray-800">
+    <div class="grid justify-center mt-20">
+      <form action="/convert" method="post" enctype="multipart/form-data" id="convertForm">
+        <div class="grid grid-cols-1 grid-rows-2 justify-items-center">
+          <div class="space-y-8">
 
-              <input
-                type="file"
-                name="video"
-                accept="video/*"
-                required
-                class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
-              />
+            <input type="file" name="video" accept="video/*" required
+              class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" />
 
-              <label for="width"></label>
-              <input
-                type="number"
-                name="width"
-                id="width"
-                class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                placeholder="Enter width"
-                step="1"
-                max="3840"
-                min="1"
-              />
+            <label for="width"></label>
+            <input type="number" name="width" id="width"
+              class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              placeholder="Enter width" step="1" max="3840" min="1" />
 
-              <label for="height"></label>
-              <input
-                type="number"
-                name="height"
-                id="height"
-                class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                placeholder="Enter height"
-                step="1"
-                max="2160"
-                min="1"
-              />
+            <label for="height"></label>
+            <input type="number" name="height" id="height"
+              class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              placeholder="Enter height" step="1" max="2160" min="1" />
 
-              <label for="duration"></label>
-              <input
-                type="number"
-                name="duration"
-                id="duration"
-                class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                placeholder="Enter duration (seconds)"
-                step="1"
-                min="1"
-              />
+            <label for="duration"></label>
+            <input type="number" name="duration" id="duration"
+              class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              placeholder="Enter duration (seconds)" step="1" min="1" />
 
-              <label for="framerate"></label>
-              <select
-                name="framerate"
-                id="framerate"
-                class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-              >
-                <option value="">default fps</option>
-                <option value="10">10fps</option>
-                <option value="20">20fps</option>
-                <option value="30">30fps</option>
-                <option value="40">40fps</option>
-                <option value="50">50fps</option>
-                <option value="60">60fps</option>
-              </select>
-            </div>
-            <div class="mt-14">
-              <button
-                type="submit"
-                class="rounded-md bg-indigo-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-              >
-                Convert To GIF
-              </button>
-            </div>
+            <label for="framerate"></label>
+            <select name="framerate" id="framerate"
+              class="block w-full p-2 text-gray-900 border-0 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+              <option value="">default fps</option>
+              <option value="10">10fps</option>
+              <option value="20">20fps</option>
+              <option value="30">30fps</option>
+              <option value="40">40fps</option>
+              <option value="50">50fps</option>
+              <option value="60">60fps</option>
+            </select>
           </div>
-        </form>
-      </div>
-    </body>
-  </div>
+          <div class="mt-14">
+            <button type="submit" id="convertButton"
+              class="rounded-md bg-indigo-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+              Convert To GIF
+            </button>
+
+            <script>
+              // Function to change the button text
+              function changeButtonText() {
+                const button = document.getElementById('convertButton');
+                if (button) {
+                  button.textContent = 'Converting to GIF...';
+                }
+              }
+
+              // Attach the function to the form's submit event
+              document.getElementById('convertForm').addEventListener('submit', changeButtonText);
+            </script>
+          </div>
+        </div>
+      </form>
+    </div>
+  </body>
+</div>
 
 </html>

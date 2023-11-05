@@ -35,7 +35,7 @@ router.get("/:uniqueID", (req, res) => {
         });
 
         // Render the page with the GIF URL
-        res.render("convert", { uniqueID, s3Url });
+        res.render("gif", { uniqueID, s3Url });
       }
     });
   };
