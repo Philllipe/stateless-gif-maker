@@ -14,14 +14,14 @@ const s3Bucket = "n11029935-assignment-2";
 const sqsQueueUrl =
   "https://sqs.ap-southeast-2.amazonaws.com/901444280953/n11029935-sqs-queue";
 
-// require("dotenv").config();
+require("dotenv").config();
 
-// AWS.config.update({
-//   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-//   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-//   sessionToken: process.env.AWS_SESSION_TOKEN,
-//   region: "ap-southeast-2",
-// });
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  sessionToken: process.env.AWS_SESSION_TOKEN,
+  region: "ap-southeast-2",
+});
 
 function pollQueue() {
   console.log("Polling for messages...");
@@ -94,7 +94,6 @@ function processMessage(message) {
 
     // Wait for the download to finish.
     s3ReadStream.on("end", () => {
-      console.log("Video downloaded from S3...");
       // Continue with the rest of the processing.
       let ffmpegCommand = ffmpeg(inputFilePath);
 
@@ -168,6 +167,34 @@ function processMessage(message) {
     // Handle any errors during the download.
     s3ReadStream.on("error", (err) => {
       console.error("Error downloading video from S3:", err);
+
+      // Delete the original .mp4 file from S3
+      const deleteMP4Params = {
+        Bucket: s3Bucket,
+        Key: s3ObjectKey,
+      };
+
+      s3.deleteObject(deleteMP4Params, (err, data) => {
+        if (err) {
+          console.error("Error deleting original .mp4:", err);
+        } else {
+          console.log("Original .mp4 file deleted from S3");
+        }
+
+        // Delete the message from the queue.
+        const deleteParams = {
+          QueueUrl: sqsQueueUrl,
+          ReceiptHandle: message.ReceiptHandle,
+        };
+
+        sqs.deleteMessage(deleteParams, (err, data) => {
+          if (err) {
+            console.error("SQS message deletion error:", err);
+          } else {
+            console.log("SQS message deleted successfully");
+          }
+        });
+      });
     });
   });
 }
