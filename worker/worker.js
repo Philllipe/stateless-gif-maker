@@ -122,34 +122,6 @@ function processMessage(message) {
               console.error("S3 upload error:", err);
             } else {
               console.log(`Successfully converted ${videoID} to GIF`);
-
-              // Delete the original .mp4 file from S3
-              const deleteMP4Params = {
-                Bucket: s3Bucket,
-                Key: s3ObjectKey,
-              };
-
-              s3.deleteObject(deleteMP4Params, (err, data) => {
-                if (err) {
-                  console.error("Error deleting original .mp4:", err);
-                } else {
-                  console.log("Original .mp4 file deleted from S3");
-                }
-
-                // Delete the message from the queue.
-                const deleteParams = {
-                  QueueUrl: sqsQueueUrl,
-                  ReceiptHandle: message.ReceiptHandle,
-                };
-
-                sqs.deleteMessage(deleteParams, (err, data) => {
-                  if (err) {
-                    console.error("SQS message deletion error:", err);
-                  } else {
-                    console.log("SQS message deleted successfully");
-                  }
-                });
-              });
             }
             cleanupFiles([inputFilePath, outputFilePath]);
           });
@@ -163,33 +135,27 @@ function processMessage(message) {
     // Handle any errors during the download.
     s3ReadStream.on("error", (err) => {
       console.error("Error downloading video from S3:", err);
+    });
 
-      // Delete the original .mp4 file from S3
-      const deleteMP4Params = {
-        Bucket: s3Bucket,
-        Key: s3ObjectKey,
+    s3.deleteObject(s3Params, (err, data) => {
+      if (err) {
+        console.error("Error deleting original .mp4:", err);
+      } else {
+        console.log("Original .mp4 file deleted from S3");
+      }
+
+      // Delete the message from the queue.
+      const deleteParams = {
+        QueueUrl: sqsQueueUrl,
+        ReceiptHandle: message.ReceiptHandle,
       };
 
-      s3.deleteObject(deleteMP4Params, (err, data) => {
+      sqs.deleteMessage(deleteParams, (err, data) => {
         if (err) {
-          console.error("Error deleting original .mp4:", err);
+          console.error("SQS message deletion error:", err);
         } else {
-          console.log("Original .mp4 file deleted from S3");
+          console.log("SQS message deleted successfully");
         }
-
-        // Delete the message from the queue.
-        const deleteParams = {
-          QueueUrl: sqsQueueUrl,
-          ReceiptHandle: message.ReceiptHandle,
-        };
-
-        sqs.deleteMessage(deleteParams, (err, data) => {
-          if (err) {
-            console.error("SQS message deletion error:", err);
-          } else {
-            console.log("SQS message deleted successfully");
-          }
-        });
       });
     });
   });
