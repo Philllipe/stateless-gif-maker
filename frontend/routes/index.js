@@ -5,7 +5,7 @@ const multer = require("multer");
 const AWS = require("aws-sdk");
 const fs = require("fs");
 
-const s3 = new AWS.S3();
+const s3 = new AWS.S3({ region: "ap-southeast-2" });
 const sqs = new AWS.SQS({ region: "ap-southeast-2" });
 
 AWS.config.update({

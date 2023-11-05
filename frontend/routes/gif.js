@@ -4,7 +4,7 @@ const AWS = require("aws-sdk");
 const fs = require("fs");
 const path = require("path");
 
-const s3 = new AWS.S3();
+const s3 = new AWS.S3({ region: "ap-southeast-2" });
 const s3Bucket = "n11029935-assignment-2";
 const pollInterval = 5000; // Poll every 5 seconds
 
