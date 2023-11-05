@@ -104,6 +104,7 @@ function processMessage(message) {
       ffmpegCommand
         .toFormat("gif")
         .on("end", () => {
+          console.log(`Converted ${uniqueID} to GIF...`);
           // Conversion finished; send the GIF back to S3, overwriting the original file.
           const uploadParams = {
             Bucket: s3Bucket,
@@ -115,7 +116,7 @@ function processMessage(message) {
             if (err) {
               console.error("S3 upload error:", err);
             } else {
-              console.log(`...Successfully converted ${uniqueID} to GIF`);
+              console.log(`...Uploaded ${uniqueID} to GIF`);
             }
             cleanupFiles([inputFilePath, outputFilePath]);
           });
