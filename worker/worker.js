@@ -7,7 +7,7 @@ const path = require("path");
 const app = express();
 const port = 8000;
 
-const s3 = new AWS.S3();
+const s3 = new AWS.S3({ region: "ap-southeast-2" });
 const sqs = new AWS.SQS({ region: "ap-southeast-2" });
 
 const s3Bucket = "n11029935-assignment-2";
