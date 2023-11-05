@@ -24,7 +24,6 @@ AWS.config.update({
 });
 
 function pollQueue() {
-  console.log("Polling for messages...");
   const params = {
     QueueUrl: sqsQueueUrl,
     MaxNumberOfMessages: 1,
@@ -122,10 +121,7 @@ function processMessage(message) {
             if (err) {
               console.error("S3 upload error:", err);
             } else {
-              console.log(
-                `Successfully converted ${videoID} to GIF`,
-                data.Location
-              );
+              console.log(`Successfully converted ${videoID} to GIF`);
 
               // Delete the original .mp4 file from S3
               const deleteMP4Params = {
