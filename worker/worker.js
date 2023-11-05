@@ -96,6 +96,8 @@ function processMessage(message) {
       // Continue with the rest of the processing.
       let ffmpegCommand = ffmpeg(inputFilePath);
 
+      ffmpegCommand = ffmpegCommand.addOption("-threads", "0");
+
       if (parameters.size) ffmpegCommand = ffmpegCommand.size(parameters.size);
       if (parameters.duration)
         ffmpegCommand = ffmpegCommand.setDuration(parameters.duration);
@@ -103,10 +105,10 @@ function processMessage(message) {
       if (parameters.framerate)
         ffmpegCommand = ffmpegCommand.fps(parameters.framerate);
 
-      console.log(`Converting ${videoID} to GIF...`);
       const outputFilePath = path.join("./temp", `${videoID}.gif`);
       const s3GIFObjectKey = `${videoID}.gif`;
 
+      console.log(`Converting ${videoID} to GIF...`);
       ffmpegCommand
         .toFormat("gif")
         .on("end", () => {
@@ -134,14 +136,14 @@ function processMessage(message) {
 
     // Handle any errors during the download.
     s3ReadStream.on("error", (err) => {
-      console.error("Error downloading video from S3:", err);
+      console.error("Error downloading original video");
     });
 
     s3.deleteObject(s3Params, (err, data) => {
       if (err) {
-        console.error("Error deleting original .mp4:", err);
+        console.error("Error deleting original video:", err);
       } else {
-        console.log("Original .mp4 file deleted from S3");
+        console.log("Original video file deleted from S3");
       }
 
       // Delete the message from the queue.
