@@ -124,7 +124,7 @@ function processMessage(message) {
             if (err) {
               console.error("S3 upload error:", err);
             } else {
-              console.log(`Successfully converted ${uniqueID} to GIF`);
+              console.log(`...Successfully converted ${uniqueID} to GIF`);
             }
             cleanupFiles([inputFilePath, outputFilePath]);
           });
