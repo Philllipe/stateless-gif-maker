@@ -8,21 +8,13 @@ const s3 = new AWS.S3({ region: "ap-southeast-2" });
 const s3Bucket = "n11029935-assignment-2";
 const pollInterval = 5000; // Poll every 5 seconds
 
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  sessionToken: process.env.AWS_SESSION_TOKEN,
-  region: "ap-southeast-2",
-});
-
-// This route can be used to initiate the GIF conversion process.
+// Route to get the GIF from S3
 router.get("/:uniqueID", (req, res) => {
   const { uniqueID } = req.params;
-
-  // Function to check if the GIF exists in S3
   const pollForGIF = () => {
-    const gifKey = `${uniqueID}.gif`; // Assuming your GIFs have the .gif extension
+    const gifKey = `${uniqueID}.gif`;
 
+    // Check if the GIF exists in S3
     s3.headObject({ Bucket: s3Bucket, Key: gifKey }, (err, data) => {
       if (err) {
         // The GIF doesn't exist in S3 yet. Poll again after a delay.
@@ -39,8 +31,6 @@ router.get("/:uniqueID", (req, res) => {
       }
     });
   };
-
-  // Start checking if the GIF exists in S3
   pollForGIF();
 });
 

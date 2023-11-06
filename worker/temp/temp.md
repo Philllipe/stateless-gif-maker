@@ -1,1 +1,1 @@
-Temporay directory for storing output files
+Temporay directory for storing input (video) & output (gif) files

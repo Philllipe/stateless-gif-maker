@@ -14,11 +14,12 @@ const s3Bucket = "n11029935-assignment-2";
 const sqsQueueUrl =
   "https://sqs.ap-southeast-2.amazonaws.com/901444280953/n11029935-sqs-queue";
 
+// Function to Poll the SQS queue for message to process
 function pollQueue() {
   const params = {
     QueueUrl: sqsQueueUrl,
     MaxNumberOfMessages: 1,
-    WaitTimeSeconds: 20, // Adjust this as needed.
+    WaitTimeSeconds: 20,
   };
 
   sqs.receiveMessage(params, (err, data) => {
@@ -27,15 +28,18 @@ function pollQueue() {
       return;
     }
 
+    // Process the message if it exists.
     if (data.Messages) {
       data.Messages.forEach((message) => {
         processMessage(message);
       });
     }
+    // Poll the queue again.
     pollQueue();
   });
 }
 
+// Function to clean up files from the local filesystem
 function cleanupFiles(files) {
   for (const file of files) {
     fs.unlink(file, (err) => {
@@ -46,12 +50,12 @@ function cleanupFiles(files) {
   }
 }
 
+// Function to process the message from the SQS queue
 function processMessage(message) {
-  // Extract the uniqueID
-  const messageBody = JSON.parse(message.Body);
-  const uniqueID = messageBody.uniqueID;
-  const fileExtension = messageBody.fileExtension;
-  const s3ObjectKey = `${uniqueID}.${fileExtension}`;
+  const messageBody = JSON.parse(message.Body); // Parse the message body for information
+  const uniqueID = messageBody.uniqueID; // Extract the uniqueID
+  const fileExtension = messageBody.fileExtension; // Extract the file extension
+  const s3ObjectKey = `${uniqueID}.${fileExtension}`; // Create the S3 object key
 
   // Create a writable stream to store the video file locally.
   const videoFilePath = path.join("./temp", s3ObjectKey);
@@ -66,46 +70,48 @@ function processMessage(message) {
     Key: s3ObjectKey,
   };
 
+  // Create a readable stream from the S3 object.
   const s3ReadStream = s3.getObject(s3Params).createReadStream();
+  // Pipe the read stream to the write stream.
   s3ReadStream.pipe(writeStream);
 
-  // Set a visibility timeout for the message (e.g., 5 minutes = 300 seconds)
-  const visibilityTimeout = 300;
+  // Set a visibility timeout for the message
+  const visibilityTimeout = 300; // 300 seconds
   const visibilityParams = {
     QueueUrl: sqsQueueUrl,
     ReceiptHandle: message.ReceiptHandle,
     VisibilityTimeout: visibilityTimeout,
   };
 
+  // Set the visibility timeout for the message.
   sqs.changeMessageVisibility(visibilityParams, (err, data) => {
     if (err) {
       console.error("Error setting visibility timeout:", err);
       return;
     }
-
     // Wait for the download to finish.
     s3ReadStream.on("end", () => {
       // Continue with the rest of the processing.
       let ffmpegCommand = ffmpeg(videoFilePath);
 
-      ffmpegCommand = ffmpegCommand.addOption("-threads", "0");
+      ffmpegCommand = ffmpegCommand.addOption("-threads", "0"); // Use all available CPU cores.
 
+      // Set the parameters for the conversion if they exist.
       if (parameters.size) ffmpegCommand = ffmpegCommand.size(parameters.size);
       if (parameters.duration)
         ffmpegCommand = ffmpegCommand.setDuration(parameters.duration);
-
       if (parameters.framerate)
         ffmpegCommand = ffmpegCommand.fps(parameters.framerate);
 
-      const gifFilePath = path.join("./temp", `${uniqueID}.gif`);
-      const s3GIFObjectKey = `${uniqueID}.gif`;
+      const gifFilePath = path.join("./temp", `${uniqueID}.gif`); // Create a path for the GIF file.
+      const s3GIFObjectKey = `${uniqueID}.gif`; // Create the S3 object key for the GIF file.
 
       console.log(`Converting ${uniqueID} to GIF...`);
       ffmpegCommand
         .toFormat("gif")
         .on("end", () => {
           console.log(`Converted ${uniqueID} to GIF...`);
-          // Conversion finished; send the GIF back to S3, overwriting the original file.
+          // Conversion finished, send the GIF back to S3, overwriting the original file.
           const uploadParams = {
             Bucket: s3Bucket,
             Key: s3GIFObjectKey, // Use the original video file name.
