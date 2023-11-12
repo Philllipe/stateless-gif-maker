@@ -14,8 +14,17 @@ const s3Bucket = "n11029935-assignment-2";
 const sqsQueueUrl =
   "https://sqs.ap-southeast-2.amazonaws.com/901444280953/n11029935-sqs-queue";
 
+let concurrentTasks = 0;
+const maxConcurrentTasks = 5;
+
 // Function to Poll the SQS queue for message to process
 function pollQueue() {
+  if (concurrentTasks >= maxConcurrentTasks) {
+    console.log("Max concurrent tasks reached. Waiting...");
+    setTimeout(() => pollQueue(), 10000); // Retry after a delay
+    return;
+  }
+
   const params = {
     QueueUrl: sqsQueueUrl,
     MaxNumberOfMessages: 1,
@@ -76,7 +85,7 @@ function processMessage(message) {
   s3ReadStream.pipe(writeStream);
 
   // Set a visibility timeout for the message
-  const visibilityTimeout = 300; // 300 seconds
+  const visibilityTimeout = 600; // 300 seconds / 5 minutes
   const visibilityParams = {
     QueueUrl: sqsQueueUrl,
     ReceiptHandle: message.ReceiptHandle,
@@ -89,6 +98,7 @@ function processMessage(message) {
       console.error("Error setting visibility timeout:", err);
       return;
     }
+
     // Wait for the download to finish.
     s3ReadStream.on("end", () => {
       // Continue with the rest of the processing.
@@ -107,6 +117,9 @@ function processMessage(message) {
       const s3GIFObjectKey = `${uniqueID}.gif`; // Create the S3 object key for the GIF file.
 
       console.log(`Converting ${uniqueID} to GIF...`);
+
+      // Increment the number of concurrent tasks.
+      concurrentTasks++;
       ffmpegCommand
         .toFormat("gif")
         .on("end", () => {
@@ -124,6 +137,30 @@ function processMessage(message) {
             } else {
               console.log(`...Uploaded ${uniqueID} to GIF`);
               cleanupFiles([gifFilePath]);
+
+              s3.deleteObject(s3Params, (err, data) => {
+                if (err) {
+                  console.error("Error deleting original video:", err);
+                } else {
+                  console.log("Original video file deleted from S3");
+                }
+
+                // Delete the message from the queue.
+                const deleteParams = {
+                  QueueUrl: sqsQueueUrl,
+                  ReceiptHandle: message.ReceiptHandle,
+                };
+
+                sqs.deleteMessage(deleteParams, (err, data) => {
+                  if (err) {
+                    console.error("SQS message deletion error:", err);
+                  } else {
+                    console.log("SQS message deleted successfully");
+                  }
+                });
+              });
+
+              concurrentTasks--;
             }
           });
           cleanupFiles([videoFilePath]);
@@ -131,30 +168,9 @@ function processMessage(message) {
         .on("error", (err) => {
           console.error("Error during conversion:", err);
           cleanupFiles([videoFilePath, gifFilePath]);
+          concurrentTasks--;
         })
         .save(gifFilePath);
-
-      s3.deleteObject(s3Params, (err, data) => {
-        if (err) {
-          console.error("Error deleting original video:", err);
-        } else {
-          console.log("Original video file deleted from S3");
-        }
-
-        // Delete the message from the queue.
-        const deleteParams = {
-          QueueUrl: sqsQueueUrl,
-          ReceiptHandle: message.ReceiptHandle,
-        };
-
-        sqs.deleteMessage(deleteParams, (err, data) => {
-          if (err) {
-            console.error("SQS message deletion error:", err);
-          } else {
-            console.log("SQS message deleted successfully");
-          }
-        });
-      });
     });
 
     // Handle any errors during the download.
