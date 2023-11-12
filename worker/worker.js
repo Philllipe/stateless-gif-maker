@@ -85,7 +85,7 @@ function processMessage(message) {
   s3ReadStream.pipe(writeStream);
 
   // Set a visibility timeout for the message
-  const visibilityTimeout = 600; // 300 seconds / 5 minutes
+  const visibilityTimeout = 600; // 600 seconds / 10 minutes
   const visibilityParams = {
     QueueUrl: sqsQueueUrl,
     ReceiptHandle: message.ReceiptHandle,
