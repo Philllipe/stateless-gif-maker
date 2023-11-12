@@ -134,6 +134,8 @@ function processMessage(message) {
           s3.upload(uploadParams, (err, data) => {
             if (err) {
               console.error("S3 upload error:", err);
+              cleanupFiles([gifFilePath]);
+              concurrentTasks--;
             } else {
               console.log(`...Uploaded ${uniqueID} to GIF`);
               cleanupFiles([gifFilePath]);
@@ -159,7 +161,6 @@ function processMessage(message) {
                   }
                 });
               });
-
               concurrentTasks--;
             }
           });
