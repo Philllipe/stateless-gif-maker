@@ -37,6 +37,9 @@ The application is also configured to use the a specfic S3 bucket and SQS queue.
 - [Amazon Load Balancer](https://aws.amazon.com/elasticloadbalancing/)
 - [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/)
 
+## Demonstration
+https://github.com/Philllipe/stateless-gif-maker/assets/93122697/22e9edb5-a5a2-4f93-a34d-a5767d311e5f
+
 ## How To Use
 This application is meant to be deployed on the cloud, and therefore running locally was not intended. However it can be run locally by getting the AWS credentials for your account, then adding code to configure the AWS SDK credentials with a .env file or by setting the environment variables in the terminal session.
 
